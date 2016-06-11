@@ -1,0 +1,12 @@
+{
+    "smartwebhook": {
+        "branch": "master",
+        "path": "/Users/fangpeng/project/githubs/tests",
+        "command": "/Users/fangpeng/project/githubs/smartwebhook/app/shells/yshells.sh"
+    },
+    "main-website": {
+        "branch": "master",
+        "path": "/path/to/project",
+        "command": "/path/to/shell"
+    }
+}
