@@ -15,8 +15,11 @@ project_file = os.path.join(base, 'projects.json')
 app = Bottle()
 
 
-@app.route('/')
+@app.post('/')
 def index():
+    data = dict(request.forms)
+    print '-----------\n', data
+    print dict(request.headers)
     return {"hello": "world"}
 
 
