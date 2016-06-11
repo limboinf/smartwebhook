@@ -45,4 +45,4 @@ def push(project):
         print dict(request.headers)
         return data
 
-run(app, port=7777, debug=True)
+run(app, host="0.0.0.0", port=7777, debug=True)
