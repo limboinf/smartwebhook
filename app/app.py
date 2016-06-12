@@ -18,6 +18,7 @@ app = Bottle()
 def push(project_name):
     msg = 'prepare pulling for project: [%s]....\n' % project_name
     pull_status = '[Fail]'
+    is_send_mail = True
     try:
         with open(project_file, 'r') as fb:
             projects = json.load(fb)
@@ -35,23 +36,25 @@ def push(project_name):
             # valid request headers
             git_platform = valid_request_headers(headers, project_info)
             if isinstance(git_platform, basestring):    # ping request
-                return {}
+                is_send_mail = False
+            else:                                       # push request
+                platform = git_platform.keys()[0]
+                if platform == 'coding':
+                    stdout = handel_coding(project_name, data, project_info)
+                    if stdout:
+                        pull_status = '[OK]'
+                        msg += stdout
 
-            platform = git_platform.keys()[0]
-            if platform == 'coding':
-                stdout = handel_coding(project_name, data, project_info)
-                if stdout:
-                    pull_status = '[OK]'
-                    msg += stdout
-
-            return {}
     except Exception, e:
         # send mail
         msg += str(e)
 
     finally:
-        mail = project_info['mail']
-        send_mail(msg, project_name, pull_status, mail)
+        if is_send_mail:
+            mail = project_info['mail']
+            send_mail(msg, project_name, pull_status, mail)
+            
+        return {}
 
 
 def valid_request_headers(headers, project_info):
