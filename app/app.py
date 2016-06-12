@@ -5,6 +5,7 @@ webhook
     :license: MIT, see LICENSE for more details.
 """
 import json
+import threading
 import os
 import subprocess
 from bottle import Bottle, run, request
@@ -52,8 +53,11 @@ def push(project_name):
     finally:
         if is_send_mail:
             mail = project_info['mail']
-            send_mail(msg, project_name, pull_status, mail)
-            
+            t = HookThread(send_mail, (msg, project_name, pull_status, mail))
+            t.setDaemon(True)
+            t.start()
+            # send_mail(msg, project_name, pull_status, mail)
+
         return {}
 
 
@@ -110,7 +114,7 @@ def handel_coding(project_name, data, project_info):
 
         # check short message whether is equal to value of the `pull_flag` flag.
         # running command when it's true or it's none.
-        commits = json.loads(data['commits'])[0]
+        commits = data['commits'][0]
         pull_flag = project_info['pull_flag']
         command = project_info['command']
         after_commit_id = data['after']
@@ -157,5 +161,14 @@ def valid_pull_status(after_commit_id):
     last_commit_id = msg.split(' ')[0]
     return after_commit_id == last_commit_id
 
+
+class HookThread(threading.Thread):
+    def __init__(self, func, args):
+        threading.Thread.__init__(self)
+        self.func = func
+        self.args = args
+
+    def run(self):
+        apply(self.func, self.args)
 
 run(app, host="0.0.0.0", port=7777, debug=True)
