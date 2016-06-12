@@ -20,6 +20,7 @@ def push(project_name):
     msg = 'prepare pulling for project: [%s]....\n' % project_name
     pull_status = '[Fail]'
     is_send_mail = True
+    project_info = {}
     try:
         with open(project_file, 'r') as fb:
             projects = json.load(fb)
@@ -39,20 +40,23 @@ def push(project_name):
                 if platform == 'coding':
                     stdout = handel_coding(data, project_info)
                     is_send_mail = stdout['pull']
+                    stdout_msg = stdout['msg']
                     if is_send_mail:
                         pull_status = '[OK]'
-                        msg += stdout
+                        msg += stdout_msg
 
     except Exception, e:
         # send mail
         msg += str(e)
+        print e
 
     finally:
         if is_send_mail:
-            mail = project_info['mail']
-            t = HookThread(send_mail, (msg, project_name, pull_status, mail))
-            t.setDaemon(True)
-            t.start()
+            mail = project_info.get('mail', None)
+            if mail:
+                t = HookThread(send_mail, (msg, project_name, pull_status, mail))
+                t.setDaemon(True)
+                t.start()
             # send_mail(msg, project_name, pull_status, mail)
 
         return {}
