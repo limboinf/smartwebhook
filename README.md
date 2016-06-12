@@ -8,8 +8,9 @@ A smart git webhook bases on bottle supports to github and coding or other git p
 
 使用截图:
 
-![](./screenshot1.png)
+![](./screenshot3.png)
 
+![](./screenshot1.png)
 
 ![](./screenshot2.png)
 
