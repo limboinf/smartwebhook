@@ -31,6 +31,9 @@ def push(project_name):
 
         # valid request headers
         git_platform = valid_request_headers(headers, project_info)
+        if isinstance(git_platform, basestring):    # ping request
+            return {}
+
         platform = git_platform.keys()[0]
         if platform == 'coding':
             handel_coding(project_name, data, project_info)
@@ -44,6 +47,9 @@ def valid_request_headers(headers, project_info):
         #     raise ValueError("Invalid User-Agent:%s" % headers['User-Agent'])
 
         if headers['X-Coding-Event'] != v['X-Coding-Event']:
+            if headers['X-Coding-Event'] == 'ping':
+                return 'ping'
+
             raise ValueError("Invalid User-Agent, excepted X-Coding-Event:%s but got %s" \
                       % (v['X-Coding-Event'], headers['X-Coding-Event']))
 
