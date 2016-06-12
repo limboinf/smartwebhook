@@ -38,11 +38,14 @@ def push(project_name):
             else:                                       # push request
                 platform = git_platform.keys()[0]
                 if platform == 'coding':
-                    stdout = handel_coding(data, project_info)
-                    is_send_mail = stdout['pull']
-                    stdout_msg = stdout['msg']
+                    result = handel_coding(data, project_info)
+                    is_send_mail = result['pull']
+                    stdout_msg = result['msg']
+                    is_pull_succeeded = result['is_pull_succeeded']
                     if is_send_mail:
-                        pull_status = '[OK]'
+                        if is_pull_succeeded:
+                            pull_status = '[OK]'
+
                         msg += stdout_msg
 
     except Exception, e:
@@ -119,7 +122,7 @@ def handel_coding(data, project_info):
         pull_flag = project_info['pull_flag']
         project_path = project_info['path']
         command = 'cd %s;/bin/bash %s' % (project_path, project_info['command'])
-
+        print command
         after_commit_id = data['after']
         is_pull = False
         if pull_flag:
@@ -131,12 +134,14 @@ def handel_coding(data, project_info):
         stdout = ''
         if is_pull:
             stdout = run_command(command)
-            is_pull_succeeded = valid_pull_status(after_commit_id)
+            command = 'cd %s; %s' % (project_path, "git log -n 1 --pretty=oneline")
+            print command
+            is_pull_succeeded = valid_pull_status(command, after_commit_id)
             if is_pull_succeeded:
                 stdout = "[OK] Pull Succeeded!\n" + stdout
             else:
                 stdout = "[Fail] Pull Failed!\n" + stdout
-            return {'pull': True, 'msg': stdout}
+            return {'pull': True, 'msg': stdout, 'is_pull_succeeded': is_pull_succeeded}
 
         return {'pull': False, 'msg': stdout}
 
@@ -153,7 +158,6 @@ def valid_token(data, project_info):
 
 
 def run_command(command):
-    # run bash: `cd path;ls`
     m = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout = ''
     for line in m.stdout.readlines():
@@ -161,8 +165,8 @@ def run_command(command):
     return stdout
 
 
-def valid_pull_status(after_commit_id):
-    m = subprocess.Popen('git log -n 1 --pretty=oneline', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+def valid_pull_status(command, after_commit_id):
+    m = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     msg = m.stdout.readlines()[0]
     last_commit_id = msg.split(' ')[0]
     return after_commit_id == last_commit_id
