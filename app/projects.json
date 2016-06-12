@@ -1,9 +1,25 @@
 {
-    "smartwebhook": {
+    "yshells": {
         "branch": "master",
-        "path": "/Users/fangpeng/project/githubs/tests",
-        "command": "/Users/fangpeng/project/githubs/smartwebhook/app/shells/yshells.sh",
-        "pull_flag": ""
+        "path": "/home/team/team/yshells",
+        "command": "/home/team/team/smartwebhook/app/shells/yshells.sh",
+        "pull_flag": "#online#",
+        "token": "PL,Yjm@3%!qaz",
+        "mail": {
+            "mail_host": "smtp.163.com",
+            "mail_port": 25,
+            "mail_user": "xinxinyu2011@163.com",
+            "mail_pass": "****",
+            "mail_sender": "xinxinyu2011@163.com",
+            "receivers": ["1373763906@qq.com"]
+        },
+        "git": {
+            "coding" : {
+                "X-Coding-Event": "push",
+                "User-Agent": "Coding.net Hook"
+            }
+        }
+
     },
     "main-website": {
         "branch": "master",
