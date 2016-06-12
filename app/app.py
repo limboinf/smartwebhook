@@ -16,35 +16,49 @@ app = Bottle()
 
 @app.post('/push/<project_name>')
 def push(project_name):
-    with open(project_file, 'r') as fb:
-        projects = json.load(fb)
-        if project_name not in projects:
-            raise ValueError("project dose not exist!")
+    msg = 'prepare pulling for project: [%s]....\n' % project_name
+    pull_status = '[Fail]'
+    try:
+        with open(project_file, 'r') as fb:
+            projects = json.load(fb)
+            if project_name not in projects:
+                raise ValueError("project dose not exist!")
 
-        item = projects[project_name]
-        # run bash: `cd path;ls`
-        subprocess.Popen('cd ' + item['path'] + ';ls', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            item = projects[project_name]
+            # run bash: `cd path;ls`
+            subprocess.Popen('cd ' + item['path'] + ';ls', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-        data = dict(request.forms)
-        headers = dict(request.headers)
-        project_info = projects[project_name]
+            data = dict(request.forms)
+            headers = dict(request.headers)
+            project_info = projects[project_name]
 
-        # valid request headers
-        git_platform = valid_request_headers(headers, project_info)
-        if isinstance(git_platform, basestring):    # ping request
+            # valid request headers
+            git_platform = valid_request_headers(headers, project_info)
+            if isinstance(git_platform, basestring):    # ping request
+                return {}
+
+            platform = git_platform.keys()[0]
+            if platform == 'coding':
+                stdout = handel_coding(project_name, data, project_info)
+                if stdout:
+                    pull_status = '[OK]'
+                    msg += stdout
+
             return {}
+    except Exception, e:
+        # send mail
+        msg += str(e)
 
-        platform = git_platform.keys()[0]
-        if platform == 'coding':
-            handel_coding(project_name, data, project_info)
-        return {}
+    finally:
+        mail = project_info['mail']
+        send_mail(msg, project_name, pull_status, mail)
 
 
 def valid_request_headers(headers, project_info):
     git = project_info['git']
     for k, v in git.items():
-        # if not headers['User-Agent'].startswith(v['User-Agent']):
-        #     raise ValueError("Invalid User-Agent:%s" % headers['User-Agent'])
+        if not headers['User-Agent'].startswith(v['User-Agent']):
+            raise ValueError("Invalid User-Agent:%s" % headers['User-Agent'])
 
         if headers['X-Coding-Event'] != v['X-Coding-Event']:
             if headers['X-Coding-Event'] == 'ping':
@@ -80,6 +94,8 @@ def send_mail(text, project, status, mail_info):
 
 def handel_coding(project_name, data, project_info):
     try:
+        data = data.keys()[0]
+
         if isinstance(data, (basestring,)):
             data = json.loads(data)
 
@@ -110,13 +126,10 @@ def handel_coding(project_name, data, project_info):
             else:
                 stdout = "[Fail] Pull Failed!\n" + stdout
 
-            # send mail
-            mail = project_info['mail']
-            send_mail(stdout, project_name, "[OK]" if is_pull_succeeded else "[Fail]", mail)
+        return stdout
 
     except Exception as ex:
-        print ex
-        raise Exception
+        raise Exception(ex)
 
 
 def valid_token(data, project_info):
