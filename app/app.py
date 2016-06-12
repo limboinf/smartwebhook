@@ -26,10 +26,6 @@ def push(project_name):
             if project_name not in projects:
                 raise ValueError("project dose not exist!")
 
-            item = projects[project_name]
-            # run bash: `cd path;ls`
-            subprocess.Popen('cd ' + item['path'] + ';ls', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
             data = dict(request.forms)
             headers = dict(request.headers)
             project_info = projects[project_name]
@@ -41,8 +37,9 @@ def push(project_name):
             else:                                       # push request
                 platform = git_platform.keys()[0]
                 if platform == 'coding':
-                    stdout = handel_coding(project_name, data, project_info)
-                    if stdout:
+                    stdout = handel_coding(data, project_info)
+                    is_send_mail = stdout['pull']
+                    if is_send_mail:
                         pull_status = '[OK]'
                         msg += stdout
 
@@ -99,7 +96,7 @@ def send_mail(text, project, status, mail_info):
         print "error: send mail failed, ", ex
 
 
-def handel_coding(project_name, data, project_info):
+def handel_coding(data, project_info):
     try:
         data = data.keys()[0]
 
@@ -116,7 +113,9 @@ def handel_coding(project_name, data, project_info):
         # running command when it's true or it's none.
         commits = data['commits'][0]
         pull_flag = project_info['pull_flag']
-        command = project_info['command']
+        project_path = project_info['path']
+        command = 'cd %s;/bin/bash %s' % (project_path, project_info['command'])
+
         after_commit_id = data['after']
         is_pull = False
         if pull_flag:
@@ -125,6 +124,7 @@ def handel_coding(project_name, data, project_info):
         else:
             is_pull = True
 
+        stdout = ''
         if is_pull:
             stdout = run_command(command)
             is_pull_succeeded = valid_pull_status(after_commit_id)
@@ -132,8 +132,9 @@ def handel_coding(project_name, data, project_info):
                 stdout = "[OK] Pull Succeeded!\n" + stdout
             else:
                 stdout = "[Fail] Pull Failed!\n" + stdout
+            return {'pull': True, 'msg': stdout}
 
-        return stdout
+        return {'pull': False, 'msg': stdout}
 
     except Exception as ex:
         raise Exception(ex)
@@ -148,6 +149,7 @@ def valid_token(data, project_info):
 
 
 def run_command(command):
+    # run bash: `cd path;ls`
     m = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout = ''
     for line in m.stdout.readlines():
